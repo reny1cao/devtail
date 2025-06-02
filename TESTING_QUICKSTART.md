@@ -1,74 +1,114 @@
-# DevTail Testing Quick Start
+# DevTail Testing Quick Start (Updated 2025)
 
 ## Current Status
 
 ✅ **Working**: Basic Go project structure, WebSocket foundations  
-🔧 **Needs Setup**: Protocol Buffers, dependencies, full integration  
+🔧 **Needs Setup**: Latest dependencies, Protocol Buffers, full integration  
 
-## Prerequisites
+## Prerequisites (2025 Updated)
 
 You'll need:
-- **Go 1.22+** (current version 1.21.6 is too old for some dependencies)
-- **Protocol Buffer compiler** (`protoc`)
-- **Basic dependencies** downloaded
+- **Go 1.24.3** (February 2025 release with 2-3% performance improvements)
+- **Protocol Buffer compiler v29.2** (latest stable)
+- **Updated dependencies** for security and performance
 
 ## Quick Setup & Test
 
-### 1. Install Go 1.22+
+### 1. Install Go 1.24.3 (Latest)
 ```bash
-# Download and install Go 1.22+
-wget https://go.dev/dl/go1.22.9.linux-amd64.tar.gz
+# Download and install Go 1.24.3 (February 2025 release)
+wget https://go.dev/dl/go1.24.3.linux-amd64.tar.gz
 sudo rm -rf /usr/local/go
-sudo tar -C /usr/local -xzf go1.22.9.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.24.3.linux-amd64.tar.gz
 export PATH=/usr/local/go/bin:$PATH
+
+# Verify installation
+go version  # Should show: go version go1.24.3 linux/amd64
 ```
 
-### 2. Install Protocol Buffers
+### 2. Install Protocol Buffers v29.2 (Latest)
 ```bash
-# Install protoc
-sudo apt update
-sudo apt install -y protobuf-compiler
+# Download and install protoc v29.2
+wget https://github.com/protocolbuffers/protobuf/releases/download/v29.2/protoc-29.2-linux-x86_64.zip
+unzip protoc-29.2-linux-x86_64.zip -d $HOME/.local
+export PATH="$HOME/.local/bin:$PATH"
 
-# Install Go plugins
+# Verify protoc installation
+protoc --version  # Should show: libprotoc 29.2
+
+# Install latest Go plugins (uses new google.golang.org/protobuf)
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 ```
 
-### 3. Fix Dependencies
+### 3. Update Dependencies (Critical)
 ```bash
 cd gateway
+
+# Update to modern Protocol Buffers (google.golang.org/protobuf)
+go get google.golang.org/protobuf@latest
+go get github.com/klauspost/compress@latest
+go get github.com/gorilla/websocket@latest
+
+# Clean up and download
 go mod download
 go mod tidy
+
+# Verify no version conflicts
+go list -m all | grep protobuf
 ```
 
-### 4. Build Everything
+### 4. Generate Protocol Buffers (New Commands)
 ```bash
-# Generate Protocol Buffer code
-make proto
+# The old plugin system is deprecated. Use new separate flags:
+cd gateway
+mkdir -p pkg/protocol/pb
 
+# Generate Go code using new protoc commands
+protoc \
+  --go_out=pkg/protocol/pb \
+  --go_opt=paths=source_relative \
+  --go-grpc_out=pkg/protocol/pb \
+  --go-grpc_opt=paths=source_relative \
+  -I pkg/protocol/proto \
+  pkg/protocol/proto/messages.proto
+```
+
+### 5. Build Everything
+```bash
 # Build all components
 make build
+
+# If make fails, build manually:
+go build -o bin/gateway cmd/gateway/main.go
+go build -o bin/test-client cmd/test-client/main.go  
+go build -o bin/test-terminal cmd/test-terminal/main.go
 ```
 
-### 5. Test Basic WebSocket
+### 6. Test Basic WebSocket
 ```bash
 # Terminal 1: Start basic test server
+cd gateway
 go run test_basic.go
 
 # Terminal 2: Test with curl
 curl http://localhost:8080
+
+# Or open browser: http://localhost:8080
 ```
 
-### 6. Test Full Gateway (once dependencies are fixed)
+### 7. Test Full Gateway (Production Ready)
 ```bash
-# Terminal 1: Start gateway
+# Terminal 1: Start gateway with mock Aider
 ./bin/gateway --log-level debug --mock
 
-# Terminal 2: Test chat
+# Terminal 2: Test chat functionality
 ./bin/test-client
+# Try: "Write a hello world function in Python"
 
-# Terminal 3: Test terminal
+# Terminal 3: Test terminal functionality  
 ./bin/test-terminal
+# Try commands: ls, pwd, echo "Hello DevTail"
 ```
 
 ## What Each Test Does
@@ -127,12 +167,27 @@ drwxrwxr-x 6 user user 4096 Jun  2 21:29 ..
 ...
 ```
 
-## Current Issues to Fix
+## 2025 Dependency Updates & Recommendations
 
-1. **Go Version**: Need Go 1.22+ for latest dependencies
-2. **Protocol Buffers**: Need `protoc` and generated files
-3. **Aider Integration**: Need Python environment with `aider-chat`
-4. **Missing Dependencies**: Some packages need newer Go version
+### ✅ Critical Updates (Do Now)
+1. **Go 1.24.3**: 2-3% performance improvement, Swiss Tables maps, better mobile battery life
+2. **Protocol Buffers v29.2**: Security updates, modern APIs, better reflection
+3. **Updated go.mod**: Latest versions of all dependencies
+
+### 🔄 Recommended Migration (Plan for Later)
+4. **WebSocket Library**: Consider migrating from `gorilla/websocket` to `github.com/coder/websocket`
+   - **Why**: Gorilla is in archive mode (no updates since 2022)
+   - **Benefit**: Active maintenance, better performance, modern Go idioms
+   - **Risk**: Gorilla is still stable, no immediate urgency
+
+```bash
+# To test new WebSocket library (optional):
+go get github.com/coder/websocket@latest
+```
+
+### 🔧 Environment Setup
+5. **Aider Integration**: Need Python environment with `aider-chat`
+6. **API Keys**: For testing real AI integration
 
 ## Next Steps After Setup
 

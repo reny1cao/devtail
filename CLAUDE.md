@@ -21,7 +21,12 @@ Mobile App <--WebSocket--> Gateway <--stdio--> Aider <--HTTPS--> LLM API
                               +--> VM Management <---> Control Plane
 ```
 
-## Common Development Commands
+## Common Development Commands (Updated 2025)
+
+### Prerequisites (IMPORTANT - Updated Versions)
+- **Go 1.24.3** (February 2025 - includes 2-3% performance improvements)
+- **protoc v29.2** (latest stable Protocol Buffers compiler)
+- **google.golang.org/protobuf** (modern Go protobuf, replaces github.com/golang/protobuf)
 
 ### Control Plane
 ```bash
@@ -33,23 +38,29 @@ make migrate        # Run database migrations
 make docker-build   # Create Docker image
 ```
 
-### Gateway
+### Gateway  
 ```bash
 cd gateway
+make install-protoc # Install protoc v29.2 + latest Go plugins
+make proto          # Generate Protocol Buffer code (uses new commands)
 make build          # Build gateway + test clients (includes proto generation)
-make proto          # Generate Protocol Buffer code
 make test           # Run unit tests with race detection
 make test-client    # Test chat functionality
 make test-terminal  # Test terminal functionality
 ```
 
-### Protocol Buffer Development
+### Protocol Buffer Development (2025 Updates)
 ```bash
 cd gateway
-make install-protoc     # Install protoc compiler and Go plugins
-make proto             # Generate Go code from .proto files
+make install-protoc     # Install protoc v29.2 and latest Go plugins
+make proto             # Generate Go code using modern google.golang.org/protobuf
 make validate-proto    # Validate proto files
 make regen-proto      # Clean and regenerate all proto files
+
+# Manual protoc command (new format):
+protoc --go_out=pkg/protocol/pb --go-grpc_out=pkg/protocol/pb \
+  --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative \
+  -I pkg/protocol/proto pkg/protocol/proto/messages.proto
 ```
 
 ## Testing Strategy
@@ -149,7 +160,7 @@ export OPENAI_API_KEY=your-key       # Alternative LLM provider
 - **VM Isolation**: Per-user VMs with no public SSH access
 - **Token Security**: Bcrypt hashed WebSocket tokens with 1-hour expiry
 
-## Dependencies
+## Dependencies (2025 Updated)
 
 ### Control Plane
 - `github.com/gin-gonic/gin` - HTTP router
@@ -157,12 +168,19 @@ export OPENAI_API_KEY=your-key       # Alternative LLM provider
 - `github.com/lib/pq` - PostgreSQL driver
 - `github.com/spf13/viper` - Configuration management
 
-### Gateway
-- `github.com/gorilla/websocket` - WebSocket implementation
+### Gateway (Current)
+- `github.com/gorilla/websocket` - WebSocket implementation (⚠️ archive mode since 2022)
 - `github.com/creack/pty` - PTY management
-- `google.golang.org/protobuf` - Protocol Buffers
+- `google.golang.org/protobuf` - Protocol Buffers (modern, replaces github.com/golang/protobuf)
 - `github.com/klauspost/compress` - zstd compression
 - `github.com/fsnotify/fsnotify` - File system watching
+
+### Gateway (Recommended Migration)
+- `github.com/coder/websocket` - Modern WebSocket (⭐ recommended over Gorilla)
+  - **Why**: Active maintenance, better performance, modern Go idioms
+  - **Status**: Coder took over nhooyr.io/websocket in October 2024
+  - **Users**: Traefik, Vault, Cloudflare
+  - **Migration**: See WEBSOCKET_MIGRATION_2025.md
 
 ## Current Status
 

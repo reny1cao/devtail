@@ -4,29 +4,37 @@ PROTO_DIR := pkg/protocol/proto
 PB_DIR := pkg/protocol/pb
 PROTO_FILES := $(wildcard $(PROTO_DIR)/*.proto)
 
-# Install protoc compiler
+# Install protoc compiler (Updated 2025)
 .PHONY: install-protoc
 install-protoc:
-	@echo "Installing protoc..."
+	@echo "Installing protoc v29.2 (latest stable)..."
 	@if ! command -v protoc &> /dev/null; then \
 		if [ "$$(uname)" = "Darwin" ]; then \
+			echo "Installing via Homebrew..."; \
 			brew install protobuf; \
 		elif [ "$$(uname)" = "Linux" ]; then \
-			sudo apt-get update && sudo apt-get install -y protobuf-compiler; \
+			echo "Installing protoc v29.2 from GitHub releases..."; \
+			wget -q https://github.com/protocolbuffers/protobuf/releases/download/v29.2/protoc-29.2-linux-x86_64.zip -O /tmp/protoc.zip; \
+			unzip -q /tmp/protoc.zip -d $$HOME/.local; \
+			rm /tmp/protoc.zip; \
+			echo "Added protoc to $$HOME/.local/bin (add to PATH if needed)"; \
 		else \
-			echo "Please install protoc manually"; \
+			echo "Please install protoc v29.2 manually from:"; \
+			echo "https://github.com/protocolbuffers/protobuf/releases/tag/v29.2"; \
 			exit 1; \
 		fi \
 	fi
-	@echo "Installing Go protoc plugins..."
+	@echo "Installing latest Go protoc plugins (google.golang.org/protobuf)..."
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+	@echo "✅ protoc installation complete"
 
-# Generate Go code from proto files
+# Generate Go code from proto files (Updated for 2025)
 .PHONY: proto
 proto:
-	@echo "Generating Protocol Buffer code..."
+	@echo "Generating Protocol Buffer code with protoc v29.2..."
 	@mkdir -p $(PB_DIR)
+	@echo "Using modern google.golang.org/protobuf (not deprecated github.com/golang/protobuf)"
 	protoc \
 		--go_out=$(PB_DIR) \
 		--go_opt=paths=source_relative \
@@ -34,6 +42,7 @@ proto:
 		--go-grpc_opt=paths=source_relative \
 		-I$(PROTO_DIR) \
 		$(PROTO_FILES)
+	@echo "✅ Protocol Buffer generation complete"
 
 # Clean generated files
 .PHONY: clean-proto
