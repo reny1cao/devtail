@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: devtail
+      POSTGRES_PASSWORD: devtail
+      POSTGRES_DB: devtail
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+
+  control-plane:
+    build: .
+    ports:
+      - "8081:8081"
+    environment:
+      DATABASE_URL: postgres://devtail:devtail@postgres/devtail?sslmode=disable
+      CONTROL_PLANE_ENV: development
+      LOG_LEVEL: debug
+    depends_on:
+      - postgres
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    command: ["/app/control-plane", "--config", "/app/config.yaml"]
+
+volumes:
+  postgres_data:

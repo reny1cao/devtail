@@ -1,0 +1,212 @@
+syntax = "proto3";
+
+package devtail.protocol;
+
+option go_package = "github.com/devtail/gateway/pkg/protocol/pb";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
+// MessageType defines all possible message types
+enum MessageType {
+  MESSAGE_TYPE_UNKNOWN = 0;
+  MESSAGE_TYPE_CHAT = 1;
+  MESSAGE_TYPE_CHAT_REPLY = 2;
+  MESSAGE_TYPE_CHAT_STREAM = 3;
+  MESSAGE_TYPE_CHAT_ERROR = 4;
+  MESSAGE_TYPE_TERMINAL_INPUT = 5;
+  MESSAGE_TYPE_TERMINAL_OUTPUT = 6;
+  MESSAGE_TYPE_TERMINAL_RESIZE = 7;
+  MESSAGE_TYPE_FILE_OPEN = 8;
+  MESSAGE_TYPE_FILE_SAVE = 9;
+  MESSAGE_TYPE_FILE_CLOSE = 10;
+  MESSAGE_TYPE_FILE_CHANGED = 11;
+  MESSAGE_TYPE_FILE_SYNC = 12;
+  MESSAGE_TYPE_GIT_STATUS = 13;
+  MESSAGE_TYPE_GIT_DIFF = 14;
+  MESSAGE_TYPE_PING = 15;
+  MESSAGE_TYPE_PONG = 16;
+  MESSAGE_TYPE_ACK = 17;
+  MESSAGE_TYPE_RECONNECT = 18;
+  MESSAGE_TYPE_SESSION_START = 19;
+  MESSAGE_TYPE_SESSION_END = 20;
+}
+
+// Message is the main wrapper for all communication
+message Message {
+  string id = 1;
+  MessageType type = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  uint64 seq_num = 4;
+  google.protobuf.Any payload = 5;
+  
+  // Optional fields for QoS
+  bool requires_ack = 6;
+  int32 retry_count = 7;
+  string correlation_id = 8;
+}
+
+// Chat messages
+message ChatMessage {
+  string role = 1;  // "user", "assistant", "system"
+  string content = 2;
+  repeated string file_paths = 3;  // Files to include in context
+  map<string, string> metadata = 4;
+}
+
+message ChatReply {
+  string content = 1;
+  bool finished = 2;
+  int32 tokens_used = 3;
+  double cost = 4;
+  repeated FileEdit file_edits = 5;
+}
+
+message ChatError {
+  string error = 1;
+  string code = 2;
+  bool retryable = 3;
+  string details = 4;
+}
+
+// Terminal messages
+message TerminalInput {
+  bytes data = 1;
+  string terminal_id = 2;
+}
+
+message TerminalOutput {
+  bytes data = 1;
+  string terminal_id = 2;
+  bool stderr = 3;
+}
+
+message TerminalResize {
+  string terminal_id = 1;
+  uint32 rows = 2;
+  uint32 cols = 3;
+  uint32 width = 4;  // pixels
+  uint32 height = 5; // pixels
+}
+
+// File operations
+message FileOpen {
+  string path = 1;
+  string content = 2;
+  string language = 3;
+  bool read_only = 4;
+  int64 version = 5;
+}
+
+message FileSave {
+  string path = 1;
+  string content = 2;
+  int64 base_version = 3;  // For conflict detection
+}
+
+message FileEdit {
+  string path = 1;
+  repeated TextEdit edits = 2;
+  string description = 3;
+}
+
+message TextEdit {
+  Range range = 1;
+  string new_text = 2;
+}
+
+message Range {
+  Position start = 1;
+  Position end = 2;
+}
+
+message Position {
+  uint32 line = 1;      // 0-based
+  uint32 character = 2; // 0-based
+}
+
+message FileSync {
+  string path = 1;
+  string hash = 2;  // SHA256 of content
+  bytes compressed_content = 3;  // zstd compressed
+  DiffFormat diff_format = 4;
+}
+
+enum DiffFormat {
+  DIFF_FORMAT_FULL = 0;
+  DIFF_FORMAT_UNIFIED = 1;
+  DIFF_FORMAT_BINARY = 2;
+}
+
+// Git operations
+message GitStatus {
+  string working_dir = 1;
+  repeated GitFileStatus files = 2;
+  string branch = 3;
+  string remote_branch = 4;
+  int32 ahead = 5;
+  int32 behind = 6;
+}
+
+message GitFileStatus {
+  string path = 1;
+  string status = 2;  // "modified", "added", "deleted", "untracked"
+  bool staged = 3;
+}
+
+message GitDiff {
+  string path = 1;
+  string diff = 2;
+  bool staged = 3;
+}
+
+// Connection management
+message Ping {
+  int64 client_time = 1;
+  map<string, string> metrics = 2;
+}
+
+message Pong {
+  int64 client_time = 1;
+  int64 server_time = 2;
+  map<string, string> metrics = 3;
+}
+
+message Ack {
+  string message_id = 1;
+  bool success = 2;
+  string error = 3;
+}
+
+message Reconnect {
+  string session_id = 1;
+  uint64 last_seq_num = 2;
+  google.protobuf.Timestamp last_timestamp = 3;
+}
+
+message SessionStart {
+  string session_id = 1;
+  map<string, string> capabilities = 2;
+  ClientInfo client_info = 3;
+}
+
+message ClientInfo {
+  string platform = 1;     // "ios", "android"
+  string app_version = 2;
+  string device_model = 3;
+  string os_version = 4;
+  NetworkInfo network = 5;
+}
+
+message NetworkInfo {
+  string type = 1;      // "wifi", "cellular", "ethernet"
+  string quality = 2;   // "excellent", "good", "poor"
+  int32 latency_ms = 3;
+  int64 bandwidth_bps = 4;
+}
+
+// Batch message for efficiency
+message BatchMessage {
+  repeated Message messages = 1;
+  bool compressed = 2;
+}

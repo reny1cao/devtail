@@ -1,0 +1,26 @@
+database:
+  url: "postgres://devtail:password@localhost/devtail?sslmode=disable"
+
+hetzner:
+  token: "your-hetzner-api-token"
+  ssh_key_id: 123456  # Your SSH key ID in Hetzner
+  network_id: 0       # Optional: private network ID
+
+tailscale:
+  api_key: "tskey-api-xxxxx"
+  tailnet: "your-tailnet.ts.net"
+
+ssh:
+  public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAB..."
+
+gateway:
+  url: "https://github.com/devtail/gateway/releases/latest/download/gateway-linux-amd64"
+
+callback:
+  url: "https://control.devtail.com/api/v1/callbacks/vm"
+
+websocket:
+  base_url: "wss://gateway.devtail.com"
+
+port: 8081
+log_level: info
